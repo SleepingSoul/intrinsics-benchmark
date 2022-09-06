@@ -4,7 +4,7 @@ branches:
   - main
 image: Visual Studio 2022
 configuration: Release
-platform: x64
+platform: x86
 install:
 - cmd: >-
     git clone https://github.com/microsoft/vcpkg
@@ -15,7 +15,7 @@ install:
 
     vcpkg.exe integrate install
 
-    vcpkg.exe install benchmark:x64-windows
+    vcpkg.exe install benchmark:x86-windows
 
     cd ..
 clone_script:

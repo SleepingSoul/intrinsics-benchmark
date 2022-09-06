@@ -3,8 +3,8 @@ branches:
   only:
   - main
 image: Visual Studio 2022
-configuration: Release
-platform: x64
+configuration: Debug
+platform: x86
 install:
 - cmd: >-
     git clone https://github.com/microsoft/vcpkg

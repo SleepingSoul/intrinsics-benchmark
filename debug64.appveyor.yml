@@ -3,7 +3,7 @@ branches:
   only:
   - main
 image: Visual Studio 2022
-configuration: Release
+configuration: Debug
 platform: x64
 install:
 - cmd: >-
