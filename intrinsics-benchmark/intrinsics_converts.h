@@ -8,9 +8,9 @@
 
 namespace
 {
-	void convert32Uint8To32Float32(const std::vector<std::uint8_t>& input, std::vector<float>& output)
-	{
-		assert(input.size() == 32 && output.size() == 32);
+    void convert32Uint8To32Float32(const std::vector<std::uint8_t>& input, std::vector<float>& output)
+    {
+        assert(input.size() == 32 && output.size() == 32);
 
         // Preload 32 chars into register from RAM
         __m256i loadedData = _mm256_loadu_epi8(input.data());
@@ -39,7 +39,7 @@ namespace
 
         // Main bottleneck - copy data into RAM
         std::copy_n(reinterpret_cast<float*>(normalized), 32, output.data());
-	}
+    }
 
     void convert32Int16To32Float32(const std::vector<std::int16_t>& input, std::vector<float>& output)
     {

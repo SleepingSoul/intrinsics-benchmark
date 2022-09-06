@@ -3,6 +3,9 @@
 Project uses Google Benchmark to test few intrinsics implementations agains MSVC max optimizations with /arch:AVX2.
 Instruction sets that are used in these examples are AVX and AVX2.
 
+Example of running this benchmark on my PC (with Intel i7-10700k):
+![Example](https://imgur.com/a/dKu0ADH)
+
 In examples I use 3 simple operations:
 1. Transform 32 chars to 32 normalized floats;
 2. Transform 32 int16s to 32 normalized floats;
