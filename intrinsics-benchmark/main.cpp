@@ -1,58 +1,70 @@
 #include <intrin.h>
 #include <iostream>
-#include <array>
+#include <vector>
 #include <limits>
+#include <ctime>
+#include <random>
 
-void convert16Uints8To16Float32()
+#include <benchmark/benchmark.h>
+#pragma comment(lib, "shlwapi.lib")
+
+
+static void BM_Convert32FCharsToFloat32_Usual(benchmark::State& state)
 {
+    std::vector<std::uint8_t> data(32, 0);
+    std::vector<float> result(32, 0);
 
+    std::generate(data.begin(), data.end(), [] { return static_cast<std::uint8_t>(rand()); });
+
+    for (auto _ : state)
+    {
+        for (size_t i = 0; i < 32; ++i)
+        {
+            result[i] = static_cast<float>(data[i]) / 255.f;
+        }
+    }
 }
+BENCHMARK(BM_Convert32FCharsToFloat32_Usual);
 
-int main()
+
+static void BM_Convert32FCharsToFloat32_Intrinsics(benchmark::State& state)
 {
-    __m256i input;
+    std::vector<std::uint8_t> data(32, 0);
+    std::vector<float> result(32, 0);
 
+    std::generate(data.begin(), data.end(), [] { return static_cast<std::uint8_t>(rand()); });
 
-    for (int i = 0; i < 32; ++i)
+    for (auto _ : state)
     {
-        input.m256i_i8[i] = 128;
+        // Store results in array so we can copy into the vector at once in the end
+        __m256 normalized[4];
+
+        // Preload 32 chars into register from RAM
+        __m256i loadedData = _mm256_loadu_epi8(data.data());
+
+        // Convert array of chars into 4 separate arrays of int32
+        __m256i i1 = _mm256_cvtepi8_epi32(*reinterpret_cast<__m128i*>(&loadedData.m256i_u8[0])); // requires AVX2
+        __m256i i2 = _mm256_cvtepi8_epi32(*reinterpret_cast<__m128i*>(&loadedData.m256i_u8[8]));
+        __m256i i3 = _mm256_cvtepi8_epi32(*reinterpret_cast<__m128i*>(&loadedData.m256i_u8[16]));
+        __m256i i4 = _mm256_cvtepi8_epi32(*reinterpret_cast<__m128i*>(&loadedData.m256i_u8[24]));
+
+        // Convert arrays of int32 into arrays of float32 and store in registers
+        __m256 f1 = _mm256_cvtepi32_ps(i1); // requires AVX
+        __m256 f2 = _mm256_cvtepi32_ps(i2);
+        __m256 f3 = _mm256_cvtepi32_ps(i3);
+        __m256 f4 = _mm256_cvtepi32_ps(i4);
+
+        __m256 uint8Max = _mm256_set1_ps(255.f);
+
+        // Divide every float32 to normalize value
+        normalized[0] = _mm256_div_ps(f1, uint8Max); // requires AVX
+        normalized[1] = _mm256_div_ps(f2, uint8Max);
+        normalized[2] = _mm256_div_ps(f3, uint8Max);
+        normalized[3] = _mm256_div_ps(f4, uint8Max);
+
+        std::copy_n(reinterpret_cast<float*>(normalized), 16, result.data());
     }
-
-    __m256i zero = _mm256_set1_epi8(0);
-
-    // Convert array of chars into 2 separate arrays of int16 and store in registers
-    __m256i r1 = _mm256_unpackhi_epi8(input, zero); // requires AVX2
-    __m256i r2 = _mm256_unpacklo_epi8(input, zero);
-
-    // Convert arrays of int16 to arrays of int32 and store in registers
-    __m256i r3 = _mm256_cvtepi16_epi32(*(__m128i*) & r1.m256i_u16[0]); // requires AVX2
-    __m256i r4 = _mm256_cvtepi16_epi32(*(__m128i*) & r2.m256i_u16[0]);
-    __m256i r5 = _mm256_cvtepi16_epi32(*(__m128i*) & r1.m256i_u16[15]);
-    __m256i r6 = _mm256_cvtepi16_epi32(*(__m128i*) & r2.m256i_u16[15]);
-
-    // Convert arrays of int32 into arrays of float32 and store in registers
-    __m256 f1 = _mm256_cvtepi32_ps(r3); // requires AVX
-    __m256 f2 = _mm256_cvtepi32_ps(r4);
-    __m256 f3 = _mm256_cvtepi32_ps(r5);
-    __m256 f4 = _mm256_cvtepi32_ps(r6);
-
-    __m256 uint8Max = _mm256_set1_ps(255.f);
-
-    // Divide every float32 to normalize value
-    __m256 n1 = _mm256_div_ps(f1, uint8Max);
-    __m256 n2 = _mm256_div_ps(f2, uint8Max);
-    __m256 n3 = _mm256_div_ps(f3, uint8Max);
-    __m256 n4 = _mm256_div_ps(f4, uint8Max);
-
-    for (int i = 0; i < 8; ++i)
-    {
-        std::cout << i << ". " << n1.m256_f32[i] << ' ' << n2.m256_f32[i] << '\n';
-    }
-
-    for (int i = 0; i < 8; ++i)
-    {
-        std::cout << i + 8 << ". " << n3.m256_f32[i] << ' ' << n4.m256_f32[i] << '\n';
-    }
-
-    return 0;
 }
+BENCHMARK(BM_Convert32FCharsToFloat32_Intrinsics);
+
+BENCHMARK_MAIN();
