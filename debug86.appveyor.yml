@@ -15,7 +15,7 @@ install:
 
     vcpkg.exe integrate install
 
-    vcpkg.exe install benchmark:x64-windows
+    vcpkg.exe install benchmark:x86-windows
 
     cd ..
 clone_script:
