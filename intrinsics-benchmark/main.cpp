@@ -1,6 +1,6 @@
-#include <iostream>
-#include <ctime>
 #include <random>
+#include <iostream>
+#include <iomanip>
 
 #include <benchmark/benchmark.h>
 #pragma comment(lib, "shlwapi.lib")
@@ -94,7 +94,7 @@ static void BM_Convert32Int32ToFloat32_Intrinsics(benchmark::State& state)
     }
 }
 
-#ifndef _DEBUGMODEMODE
+#ifndef _DEBUGMODE
 BENCHMARK(BM_Convert32CharsToFloat32_Usual);
 BENCHMARK(BM_Convert32CharsToFloat32_Intrinsics);
 BENCHMARK(BM_Convert32Int16ToFloat32_Usual);
@@ -113,7 +113,7 @@ int main()
 
         for (std::uint8_t i = 0; i < 32; ++i)
         {
-            data[i] = i;
+            data[i] = 127;
         }
 
         convert32Uint8To32Float32(data, result);
@@ -157,7 +157,7 @@ int main()
         std::cout << "Result of int32 to float32 conversion:\n";
         for (size_t i = 0; i < 32; ++i)
         {
-            std::cout << result[i] << ' ';
+            std::cout << std::setprecision(10) << std::fixed << result[i] << ' ';
         }
         std::cout << '\n';
     }
