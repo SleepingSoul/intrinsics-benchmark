@@ -51,19 +51,18 @@ namespace
     {
         assert(input.size() == 32 && output.size() == 32);
 
-        // Store results in array so we can copy into the vector at once in the end
-        __m256 normalized[4];
-
         // Preload 32 shorts into 2 registers from RAM
-        __m256i loadedData1 = _mm256_loadu_epi16(reinterpret_cast<const void*>(&input[0]));
-        __m256i loadedData2 = _mm256_loadu_epi16(reinterpret_cast<const void*>(&input[16]));
+        __m256i loadedData[2] = {
+            _mm256_loadu_epi16(reinterpret_cast<const void*>(&input[0])),
+            _mm256_loadu_epi16(reinterpret_cast<const void*>(&input[16]))
+        };
 
 
         // Convert array of shorts into 4 separate arrays of int32
-        __m256i i1 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData1.m256i_u16[0])); // requires AVX2
-        __m256i i2 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData1.m256i_u16[8]));
-        __m256i i3 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData2.m256i_u16[0]));
-        __m256i i4 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData2.m256i_u16[8]));
+        __m256i i1 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData[0].m256i_u16[0])); // requires AVX2
+        __m256i i2 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData[0].m256i_u16[8]));
+        __m256i i3 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData[1].m256i_u16[0]));
+        __m256i i4 = _mm256_cvtepi16_epi32(*reinterpret_cast<__m128i*>(&loadedData[1].m256i_u16[8]));
 
         // Convert arrays of int32 into arrays of float32 and store in registers
         __m256 f1 = _mm256_cvtepi32_ps(i1); // requires AVX
@@ -77,28 +76,31 @@ namespace
         // For debug - I just want to see input numbers converted to floats
         __m256i int16Max = _mm256_set1_epi32(1);
 #endif
+        __m256 dividersF32[4];
 
-        // Set sign to divider depending on the sign on values that we have
-        __m256i dividersInt32[4] = {
-            _mm256_sign_epi32(int16Max, i1),
-            _mm256_sign_epi32(int16Max, i2),
-            _mm256_sign_epi32(int16Max, i3),
-            _mm256_sign_epi32(int16Max, i4)
-        };
+        {
+            // Set sign to divider depending on the sign on values that we have
+            __m256i dividersInt32[4] = {
+                _mm256_sign_epi32(int16Max, i1),
+                _mm256_sign_epi32(int16Max, i2),
+                _mm256_sign_epi32(int16Max, i3),
+                _mm256_sign_epi32(int16Max, i4)
+            };
 
-        // Convert dividers into floats
-        __m256 dividersF32[4] = {
-            _mm256_cvtepi32_ps(dividersInt32[0]),
-            _mm256_cvtepi32_ps(dividersInt32[1]),
-            _mm256_cvtepi32_ps(dividersInt32[2]),
-            _mm256_cvtepi32_ps(dividersInt32[3])
-        };
+            // Convert dividers into floats
+            dividersF32[0] = _mm256_cvtepi32_ps(dividersInt32[0]);
+            dividersF32[1] = _mm256_cvtepi32_ps(dividersInt32[1]);
+            dividersF32[2] = _mm256_cvtepi32_ps(dividersInt32[2]);
+            dividersF32[3] = _mm256_cvtepi32_ps(dividersInt32[3]);
+        }
 
         // Divide every float32 to normalize value
-        normalized[0] = _mm256_div_ps(f1, dividersF32[0]); // requires AVX
-        normalized[1] = _mm256_div_ps(f2, dividersF32[1]);
-        normalized[2] = _mm256_div_ps(f3, dividersF32[2]);
-        normalized[3] = _mm256_div_ps(f4, dividersF32[3]);
+        __m256 normalized[4] = {
+            _mm256_div_ps(f1, dividersF32[0]), // requires AVX
+            _mm256_div_ps(f2, dividersF32[1]),
+            _mm256_div_ps(f3, dividersF32[2]),
+            _mm256_div_ps(f4, dividersF32[3])
+        };
 
         std::copy_n(reinterpret_cast<float*>(normalized), 32, output.data());
     }
@@ -106,9 +108,6 @@ namespace
     void convert32Int32To32Float32(const std::vector<std::int32_t>& input, std::vector<float>& output)
     {
         assert(input.size() == 32 && output.size() == 32);
-
-        // Store results in array so we can copy into the vector at once in the end
-        __m256 normalized[4];
 
         // Preload 32 shorts into 2 registers from RAM
         __m256i loadedData[4] = {
@@ -150,10 +149,12 @@ namespace
         }
 
         // Divide every float32 to normalize value
-        normalized[0] = _mm256_div_ps(f1, dividersF32[0]); // requires AVX
-        normalized[1] = _mm256_div_ps(f2, dividersF32[1]);
-        normalized[2] = _mm256_div_ps(f3, dividersF32[2]);
-        normalized[3] = _mm256_div_ps(f4, dividersF32[3]);
+        __m256 normalized[4] = {
+            _mm256_div_ps(f1, dividersF32[0]), // requires AVX
+            _mm256_div_ps(f2, dividersF32[1]),
+            _mm256_div_ps(f3, dividersF32[2]),
+            _mm256_div_ps(f4, dividersF32[3])
+        };
 
         std::copy_n(reinterpret_cast<float*>(normalized), 32, output.data());
     }

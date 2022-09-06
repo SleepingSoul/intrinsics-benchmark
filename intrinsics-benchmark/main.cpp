@@ -86,7 +86,7 @@ static void BM_Convert32Int32ToFloat32_Intrinsics(benchmark::State& state)
     std::vector<std::int32_t> data(32, 0);
     std::vector<float> result(32, 0);
 
-    std::generate(data.begin(), data.end(), [] { return static_cast<std::int16_t>(rand()); });
+    std::generate(data.begin(), data.end(), [] { return static_cast<std::int32_t>(rand()); });
 
     for (auto _ : state)
     {
