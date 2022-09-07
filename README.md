@@ -4,7 +4,7 @@ Project uses Google Benchmark to test few intrinsics implementations agains MSVC
 Instruction sets that are used in these examples are AVX and AVX2.
 
 Example of running this benchmark on my PC (with Intel i7-10700k):
-[Imgur](https://imgur.com/Wjggwe2)
+![Imgur](https://imgur.com/Wjggwe2)
 
 In examples I use 3 simple operations:
 1. Transform 32 chars to 32 normalized floats;
